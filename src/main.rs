@@ -12,25 +12,15 @@ fn report_soundcards(cards: &[alsa::card::Card]) {
     }
 }
 
-fn main() {
-    let audio_cards = audio_source::list_audio_cards();
-    let cards = match audio_cards {
-        Ok(c) => c,
-        Err(e) => {
-            println!("Error listing ALSA sound cards: {}", e);
-            Vec::new()
-        }
-    };
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cards = audio_source::list_audio_cards()?;
     report_soundcards(&cards);
-    match audio_source::select_audio_card(cards.iter().cloned().collect()) {
-        Ok(source) => {
-            // Use the selected audio source here
-            println!("Audio source selected: {:?}", source.get_longname());
-        }
-        Err(e) => {
-            println!("Error selecting audio source: {}", e);
-        }
-    }
+    let card = audio_source::select_audio_card(cards.iter().collect::<Vec<&alsa::Card>>())?;
+    println!("Audio source selected: {:?}", card.get_longname());
+    let stream = audio_stream::convert_card_to_stream(card, Some("mp3".to_string()))?;
+    println!("Audio stream created successfully: {:?}", stream);
+    Ok(())
 }
 
 mod audio_source;
+mod audio_stream;

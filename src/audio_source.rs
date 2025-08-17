@@ -10,12 +10,12 @@ pub fn list_audio_cards() -> Result<Vec<Card>, Box<dyn std::error::Error>> {
 }
 
 
-pub fn select_audio_card(cards: Vec<Card>) -> Result<Card, Box<dyn std::error::Error>> {
+pub fn select_audio_card(cards: Vec<&Card>) -> Result<Card, Box<dyn std::error::Error>> {
     // Implement the logic to select the audio card
     if cards.is_empty() {
         return Err("No audio cards available".into());
     }
-    let card = cards.into_iter().next().ok_or("No audio cards available")?;
-    
+    let card = cards.into_iter().next().cloned().ok_or("No audio cards available")?;
+
     Ok(card)
 }
