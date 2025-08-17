@@ -1,26 +1,23 @@
 
 
 fn main() {
-    // Make sure to add 'regex' to Cargo.toml dependencies
-    let devices_result = list_audio_cards();
-    match devices_result {
-        Ok(devices) => {
-            if devices.is_empty() {
-                println!("No USB audio devices found.");
+    match audio_source::list_audio_cards() {
+        Ok(cards) => {
+            if cards.is_empty() {
+                println!("No ALSA cards found.");
             } else {
-                println!("USB audio devices:");
-                for device in devices {
-                    println!(
-                        "Card {} ({}): Device {} ({}), Description: {}, Subdevices: {}",
-                        device.card, device.card_name, device.device, device.device_name, device.description, device.subdevices.join(", ")
-                    );
+                println!("ALSA cards:");
+                for card in cards {
+                    let idx = card.get_index();
+                    let name = card.get_name().unwrap_or_else(|_| "Unknown".to_string());
+                    let longname = card.get_longname().unwrap_or_else(|_| "Unknown".to_string());
+                    println!("~ Card {}: {} - {}", idx, name, longname);
                 }
             }
         }
         Err(e) => {
-            println!("Error listing audio devices: {}", e);
+            println!("Error listing ALSA cards: {}", e);
         }
     }
 }
 mod audio_source;
-use audio_source::{list_audio_cards};
