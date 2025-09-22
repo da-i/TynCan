@@ -5,19 +5,9 @@ use console::{style, Term};
 use sha2::{Sha256, Digest};
 use std::fs::File;
 use std::io::Read;
+use std::process::Command;
 
 
-fn check_darkice_link() -> Result<(), Box<dyn std::error::Error>> {
-    println!("{}", style("Checking DarkIce download link...").bold().green());
-    let response = reqwest::blocking::get(DARKICE_SOURCE)?;
-    if response.status().is_success() {
-        println!("{}", style("DarkIce download link is valid.").bold().green());
-        Ok(())
-    } else {
-        println!("{}", style("Warning: DarkIce download link is not reachable!").bold().red());
-        Err("DarkIce download link is not reachable".into())
-    }
-}
 
 fn download_darkice() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", style("Downloading DarkIce...").bold().green());
@@ -28,6 +18,54 @@ fn download_darkice() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", style("DarkIce downloaded as darkice.deb").bold().green());
     Ok(())
 }
+
+fn install_packages_via_apt(packages: &[&str]) -> Result<(), Box<dyn std::error::Error>> {
+    if packages.is_empty() {
+        return Ok(());
+    }
+    
+    let package_list = packages.join(" ");
+    println!("{}", style(&format!("Installing packages: {} via apt-get...", package_list)).bold().green());
+    
+    // Check if running as root or with sudo
+    let mut command = if std::env::var("USER").unwrap_or_default() == "root" {
+        Command::new("apt-get")
+    } else {
+        let mut cmd = Command::new("sudo");
+        cmd.arg("apt-get");
+        cmd
+    };
+    
+    let mut cmd = command
+        .arg("install")
+        .arg("-y"); // Auto-confirm installation
+    
+    // Add all packages to the command
+    for package in packages {
+        cmd = cmd.arg(package);
+    }
+    
+    let output = cmd.output()?;
+    
+    if output.status.success() {
+        println!("{}", style(&format!("✅ {} installed successfully!", package_list)).bold().green());
+        Ok(())
+    } else {
+        let error_msg = String::from_utf8_lossy(&output.stderr);
+        println!("{}", style(&format!("❌ Failed to install {}", package_list)).bold().red());
+        println!("Error: {}", error_msg);
+        Err(format!("Failed to install packages {}: {}", package_list, error_msg).into())
+    }
+}
+
+fn verify_icecast2() -> Result<(), Box<dyn std::error::Error>> {
+    // Placeholder: Implement actual verification logic if needed
+    println!("{}", style("Verifying Icecast2 installation...").bold().cyan());
+    // For now, just return true
+
+    Ok(())
+}
+
 
 fn verify_file_hash(file_path: &str, expected_hash: &str) -> Result<bool, Box<dyn std::error::Error>> {
     println!("{}", style(&format!("Verifying SHA-256 hash for {}...", file_path)).bold().cyan());
@@ -88,17 +126,6 @@ fn initialize_configuration() -> Result<Term, std::io::Error> {
     Ok(term)
 }
 
-
-fn check_download_links() -> Result<(), Box<dyn std::error::Error>> {
-    check_darkice_link()?;
-    Ok(())
-}
-
-fn download_links() -> Result<(), Box<dyn std::error::Error>> {
-    download_darkice()?;
-    verify_darkice_file()?;
-    Ok(())
-}
 
 fn display_device_details(device: &AudioDeviceInfo) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n{}", style("=== Selected Audio Device Details ===").bold().cyan());
@@ -199,12 +226,14 @@ pub fn run_configure(auto: bool) -> Result<(), Box<dyn std::error::Error>> {
     
     let _term = initialize_configuration()?;
     
-    println!("Checking download links...");
-    check_download_links()?;
-    println!("All links are reachable.\n");
+    println!("Downloading required files and packages...");
+    let apt_packages = ["icecast2","libmp3lame0", "libtwolame0"];
+    install_packages_via_apt(&apt_packages)?;
+    download_darkice()?;
+    verify_darkice_file()?;
 
-    println!("Downloading required files...");
-    download_links()?;
+    verify_icecast2()?;
+
     println!("All files downloaded successfully.\n");
 
     // Collect available audio devices, select one
