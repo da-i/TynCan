@@ -2,6 +2,9 @@ use crate::audio_source::{collect_audio_devices, AudioDeviceInfo};
 use crate::constants::*;
 use dialoguer::{Select, theme::ColorfulTheme};
 use console::{style, Term};
+use sha2::{Sha256, Digest};
+use std::fs::File;
+use std::io::Read;
 
 
 fn check_darkice_link() -> Result<(), Box<dyn std::error::Error>> {
@@ -26,6 +29,52 @@ fn download_darkice() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn verify_file_hash(file_path: &str, expected_hash: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    println!("{}", style(&format!("Verifying SHA-256 hash for {}...", file_path)).bold().cyan());
+    
+    // Read the file contents
+    let mut file = File::open(file_path)?;
+    let mut contents = Vec::new();
+    file.read_to_end(&mut contents)?;
+    
+    // Calculate SHA-256 hash
+    let mut hasher = Sha256::new();
+    hasher.update(&contents);
+    let result = hasher.finalize();
+    let calculated_hash = format!("{:x}", result);
+    
+    let hashes_match = calculated_hash.eq_ignore_ascii_case(expected_hash);
+    
+    if hashes_match {
+        println!("{}", style("✅ Hash verification successful!").bold().green());
+        println!("Expected: {}", style(expected_hash).dim());
+        println!("Actual:   {}", style(&calculated_hash).dim());
+    } else {
+        println!("{}", style("❌ Hash verification failed!").bold().red());
+        println!("Expected: {}", style(expected_hash).dim());
+        println!("Actual:   {}", style(&calculated_hash).dim());
+    }
+    
+    Ok(hashes_match)
+}
+
+fn verify_darkice_file() -> Result<bool, Box<dyn std::error::Error>> {
+    if !std::path::Path::new("darkice.deb").exists() {
+        return Err("darkice.deb file not found".into());
+    }
+    
+    let verification_result = verify_file_hash("darkice.deb", DARKICE_HASH)?;
+    
+    if verification_result {
+        println!("{}", style("✅ DarkIce file verification successful!").bold().green());
+    } else {
+        println!("{}", style("❌ DarkIce file verification failed!").bold().red());
+        return Err("Downloaded file hash does not match expected value".into());
+    }
+    
+    Ok(verification_result)
+}
+
 fn initialize_configuration() -> Result<Term, std::io::Error> {
     // Placeholder for future configuration initialization logic
     let term = Term::stdout();
@@ -47,6 +96,7 @@ fn check_download_links() -> Result<(), Box<dyn std::error::Error>> {
 
 fn download_links() -> Result<(), Box<dyn std::error::Error>> {
     download_darkice()?;
+    verify_darkice_file()?;
     Ok(())
 }
 
