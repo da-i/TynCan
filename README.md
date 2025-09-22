@@ -11,12 +11,19 @@ TynCan allows you to turn your usb audio input into a webradio station that is p
 
 
 ## 0.0.1 roadmap
-- [ ] Implement USB audio input detection
+- [X] Implement USB audio input detection
 - [ ] Create proper config setup
-- [ ] Convert input into mp3 stream (darkice?)
-- [ ] Stream audio over local network (icecast2)
+- [ ] Automate build for rpi arm 32 bit systems
+- [ ] create darkice config interactively
+- [ ] icecast2 config??
+- [ ] Initialize services for both darkice and icecast
+- [ ] Setable steam name
 - [ ] Add support for popular network speakers (Sonos, Devon)
+- [ ] Display links to webUI of icecast2
+
+## Later
 - [ ] Create simple web interface for control
+- [ ] Set cover art of steam
 - [ ] Write installation and usage documentation
 - [ ] Test on Raspberry Pi and other devices
 
