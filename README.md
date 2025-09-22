@@ -22,4 +22,7 @@ TynCan allows you to turn your usb audio input into a webradio station that is p
 
 
 ### credits
- [replayreb](https://www.instructables.com/Add-Aux-to-Sonos-Using-Raspberry-Pi/#)  for the original idea
+ -[replayreb](https://www.instructables.com/Add-Aux-to-Sonos-Using-Raspberry-Pi/#)  for the original idea
+ -[x20mar](https://github.com/x20mar/darkice-with-mp3-for-raspberry-pi?tab=readme-ov-file) for the darkice binary and his [blog-post](http://code-injection.blogspot.com/2014/05/broadcasting-with-raspberry-pi.html).
+ 
+
