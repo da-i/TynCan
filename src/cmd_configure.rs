@@ -88,51 +88,39 @@ fn display_device_details(device: &AudioDeviceInfo) -> Result<(), Box<dyn std::e
     Ok(())
 }
 
-pub fn run_configure(auto: bool) -> Result<(), Box<dyn std::error::Error>> {
-    
-    let term = initialize_configuration()?;
-    
-    check_download_links()?;
-
-    println!("All links are reachable.\n");
-
-    println!("Downloading DarkIce...");
-    download_links()?;
-
-    // Collect available audio devices
+fn select_audio_device(auto: bool) -> Result<Option<AudioDeviceInfo>, Box<dyn std::error::Error>> {
     println!("Scanning for available audio devices...");
     let devices = collect_audio_devices()?;
-    
+
     if devices.is_empty() {
         println!("{}", style("❌ No audio devices found!").red());
-        return Ok(());
+        return Ok(None);
     }
-    
+
     println!("Found {} audio device(s):\n", devices.len());
-    
+
     let selected_device = if auto {
-        // Auto mode: select the first device
         println!("{}", style("Auto mode: selecting first available device").yellow());
-        &devices[0]
+        devices[0].clone()
     } else {
-        // Interactive mode: let user choose
         let device_strings: Vec<String> = devices.iter()
             .map(|device| device.to_string())
             .collect();
-        
+
         let selection = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Select an audio device")
             .default(0)
             .items(&device_strings)
             .interact()?;
-        
-        &devices[selection]
+
+        devices[selection].clone()
     };
-    
-    // Display detailed information about the selected device
-    display_device_details(selected_device)?;
-    
-    // Ask if user wants to continue with this device (skip in auto mode)
+
+    display_device_details(&selected_device)?;
+    Ok(Some(selected_device))
+}
+
+fn confirm_device_selection(device: &AudioDeviceInfo, auto: bool) -> Result<bool, Box<dyn std::error::Error>> {
     let continue_selection = if auto {
         true
     } else {
@@ -144,15 +132,39 @@ pub fn run_configure(auto: bool) -> Result<(), Box<dyn std::error::Error>> {
     
     if continue_selection {
         println!("{}", style("✅ Audio device configuration complete!").green());
-        println!("Selected device: {}", style(&selected_device.to_string()).cyan());
+        println!("Selected device: {}", style(&device.to_string()).cyan());
         
         // TODO: Save configuration to file
         println!("\n{}", style("Next steps:").bold());
-        println!("- Use '{} start --device {}' to start with this device", APP_NAME.to_lowercase(), selected_device.index);
+        println!("- Use '{} start --device {}' to start with this device", APP_NAME.to_lowercase(), device.index);
         println!("- Configuration will be saved for future use");
     } else {
         println!("{}", style("❌ Configuration cancelled.").yellow());
     }
+    
+    Ok(continue_selection)
+}
+
+pub fn run_configure(auto: bool) -> Result<(), Box<dyn std::error::Error>> {
+    
+    let _term = initialize_configuration()?;
+    
+    println!("Checking download links...");
+    check_download_links()?;
+    println!("All links are reachable.\n");
+
+    println!("Downloading required files...");
+    download_links()?;
+    println!("All files downloaded successfully.\n");
+
+    // Collect available audio devices, select one
+    let selected_device = match select_audio_device(auto)? {
+        Some(device) => device,
+        None => return Ok(()),
+    };
+
+    // Ask if user wants to continue with this device and handle the response
+    confirm_device_selection(&selected_device, auto)?;
     
     Ok(())
 }

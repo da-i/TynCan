@@ -18,6 +18,8 @@ pub const CONFIG_FILE_PATH: &str = "~/.config/tyncan/config.toml";
 /// Default log level
 pub const DEFAULT_LOG_LEVEL: &str = "INFO";
 
+pub const DARKICE_SOURCE: &str = "https://github.com/x20mar/darkice-with-mp3-for-raspberry-pi/blob/master/darkice_1.0.1-999~mp3+1_armhf.deb?raw=true";
+pub const DARKICE_HASH: &str = "";
 
 /// Prints application information.
 /// If `detailed` is true, prints port, config file path, and log level as well.
